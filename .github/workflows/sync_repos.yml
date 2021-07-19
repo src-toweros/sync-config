@@ -1,0 +1,40 @@
+name: openEuler gitee repos mirror periodic job
+
+# Triggers the workflow on push or pull request
+# events but only for the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Runs at 09:00 UTC (17:00 PM Beijing) every day
+    - cron: "0 9 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source codes
+        uses: actions/checkout@v2
+      - name: Prepare static list
+        id: set_var
+        run: |
+          content=$(cat ./static_list.txt | xargs)
+          echo "::set-output name=static_list::$content"
+
+      - name: Mirror the gitee/src-openeuler to github/src-toweros.
+        uses: Yikun/hub-mirror-action@master
+        with:
+          src: gitee/src-openeuler
+          dst: github/src-toweros
+          dst_key: ${{ secrets.SYNC_OPENEULER_PRIVATE_KEY }}
+          dst_token: ${{ secrets.SYNC_OPENEULER_TOKEN }}
+          account_type: org
+          # force_update: true
+          debug: true
+          timeout: "10m"
+          static_list: "${{ steps.set_var.outputs.static_list }}"
